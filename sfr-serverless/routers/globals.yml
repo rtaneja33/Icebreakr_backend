@@ -1,0 +1,13 @@
+handler: globals/server.handler
+events:
+  - http:
+      path: globals/configurations
+      method: GET
+      cors: ${self:custom.cors}
+      authorizer: ${self:custom.authorizer}
+  - http:
+      path: globals/settings
+      method: GET
+      cors: ${self:custom.cors}
+      authorizer: ${self:custom.authorizer}
+

@@ -1,0 +1,296 @@
+{
+  "AWSTemplateFormatVersion": "2010-09-09",
+  "Description": "The AWS CloudFormation template for this Serverless application",
+  "Resources": {
+    "ServerlessDeploymentBucket": {
+      "Type": "AWS::S3::Bucket",
+      "Properties": {
+        "BucketEncryption": {
+          "ServerSideEncryptionConfiguration": [
+            {
+              "ServerSideEncryptionByDefault": {
+                "SSEAlgorithm": "AES256"
+              }
+            }
+          ]
+        }
+      },
+      "DependsOn": []
+    },
+    "IamRoleLambdaExecution": {
+      "Type": "AWS::IAM::Role",
+      "Properties": {
+        "AssumeRolePolicyDocument": {
+          "Version": "2012-10-17",
+          "Statement": [
+            {
+              "Effect": "Allow",
+              "Principal": {
+                "Service": [
+                  "lambda.amazonaws.com"
+                ]
+              },
+              "Action": [
+                "sts:AssumeRole"
+              ]
+            }
+          ]
+        },
+        "Policies": [
+          {
+            "PolicyName": {
+              "Fn::Join": [
+                "-",
+                [
+                  "production",
+                  "iceBreaker",
+                  "lambda"
+                ]
+              ]
+            },
+            "PolicyDocument": {
+              "Version": "2012-10-17",
+              "Statement": [
+                {
+                  "Effect": "Allow",
+                  "Action": [
+                    "logs:CreateLogStream"
+                  ],
+                  "Resource": [
+                    {
+                      "Fn::Sub": [
+                        "arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/iceBreaker-production*:*",
+                        {}
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "Effect": "Allow",
+                  "Action": [
+                    "logs:PutLogEvents"
+                  ],
+                  "Resource": [
+                    {
+                      "Fn::Sub": [
+                        "arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/iceBreaker-production*:*:*",
+                        {}
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          }
+        ],
+        "Path": "/",
+        "RoleName": {
+          "Fn::Join": [
+            "-",
+            [
+              "iceBreaker",
+              "production",
+              {
+                "Ref": "AWS::Region"
+              },
+              "lambdaRole"
+            ]
+          ]
+        }
+      },
+      "DependsOn": []
+    },
+    "ApiGatewayRestApi": {
+      "Type": "AWS::ApiGateway::RestApi",
+      "Properties": {
+        "Name": "production-iceBreaker",
+        "EndpointConfiguration": {
+          "Types": [
+            "EDGE"
+          ]
+        }
+      },
+      "DependsOn": []
+    },
+    "ApiGatewayDeployment1583912406300": {
+      "Type": "AWS::ApiGateway::Deployment",
+      "Properties": {
+        "RestApiId": {
+          "Ref": "ApiGatewayRestApi"
+        },
+        "StageName": "production"
+      },
+      "DependsOn": [
+        "UsersNestedStack",
+        "GlobalsNestedStack"
+      ]
+    },
+    "AuthorizerNestedStack": {
+      "Type": "AWS::CloudFormation::Stack",
+      "Properties": {
+        "Parameters": {
+          "IamRoleLambdaExecutionArnParameter": {
+            "Fn::GetAtt": [
+              "IamRoleLambdaExecution",
+              "Arn"
+            ]
+          },
+          "ServerlessDeploymentBucketParameter": {
+            "Ref": "ServerlessDeploymentBucket"
+          },
+          "ApiGatewayRestApiParameter": {
+            "Ref": "ApiGatewayRestApi"
+          }
+        },
+        "TemplateURL": {
+          "Fn::Join": [
+            "/",
+            [
+              "https://s3.amazonaws.com",
+              {
+                "Ref": "ServerlessDeploymentBucket"
+              },
+              "serverless/iceBreaker/production/1583912444126-2020-03-11T07:40:44.126Z",
+              "cloudformation-template-Authorizer-nested-stack.json"
+            ]
+          ]
+        }
+      },
+      "DependsOn": [
+        "IamRoleLambdaExecution",
+        "ServerlessDeploymentBucket",
+        "ApiGatewayRestApi"
+      ]
+    },
+    "GlobalsNestedStack": {
+      "Type": "AWS::CloudFormation::Stack",
+      "Properties": {
+        "Parameters": {
+          "IamRoleLambdaExecutionArnParameter": {
+            "Fn::GetAtt": [
+              "IamRoleLambdaExecution",
+              "Arn"
+            ]
+          },
+          "ServerlessDeploymentBucketParameter": {
+            "Ref": "ServerlessDeploymentBucket"
+          },
+          "ApiGatewayRestApiParameter": {
+            "Ref": "ApiGatewayRestApi"
+          },
+          "ApiGatewayRestApiRootResourceIdParameter": {
+            "Fn::GetAtt": [
+              "ApiGatewayRestApi",
+              "RootResourceId"
+            ]
+          },
+          "AuthorizerApiGatewayAuthorizerParameter": {
+            "Fn::GetAtt": [
+              "AuthorizerNestedStack",
+              "Outputs.AuthorizerApiGatewayAuthorizer"
+            ]
+          }
+        },
+        "TemplateURL": {
+          "Fn::Join": [
+            "/",
+            [
+              "https://s3.amazonaws.com",
+              {
+                "Ref": "ServerlessDeploymentBucket"
+              },
+              "serverless/iceBreaker/production/1583912444126-2020-03-11T07:40:44.126Z",
+              "cloudformation-template-Globals-nested-stack.json"
+            ]
+          ]
+        }
+      },
+      "DependsOn": [
+        "IamRoleLambdaExecution",
+        "ServerlessDeploymentBucket",
+        "ApiGatewayRestApi",
+        "AuthorizerNestedStack"
+      ]
+    },
+    "UsersNestedStack": {
+      "Type": "AWS::CloudFormation::Stack",
+      "Properties": {
+        "Parameters": {
+          "IamRoleLambdaExecutionArnParameter": {
+            "Fn::GetAtt": [
+              "IamRoleLambdaExecution",
+              "Arn"
+            ]
+          },
+          "ServerlessDeploymentBucketParameter": {
+            "Ref": "ServerlessDeploymentBucket"
+          },
+          "ApiGatewayRestApiParameter": {
+            "Ref": "ApiGatewayRestApi"
+          },
+          "ApiGatewayRestApiRootResourceIdParameter": {
+            "Fn::GetAtt": [
+              "ApiGatewayRestApi",
+              "RootResourceId"
+            ]
+          },
+          "AuthorizerApiGatewayAuthorizerParameter": {
+            "Fn::GetAtt": [
+              "AuthorizerNestedStack",
+              "Outputs.AuthorizerApiGatewayAuthorizer"
+            ]
+          }
+        },
+        "TemplateURL": {
+          "Fn::Join": [
+            "/",
+            [
+              "https://s3.amazonaws.com",
+              {
+                "Ref": "ServerlessDeploymentBucket"
+              },
+              "serverless/iceBreaker/production/1583912444126-2020-03-11T07:40:44.126Z",
+              "cloudformation-template-Users-nested-stack.json"
+            ]
+          ]
+        }
+      },
+      "DependsOn": [
+        "IamRoleLambdaExecution",
+        "ServerlessDeploymentBucket",
+        "ApiGatewayRestApi",
+        "AuthorizerNestedStack"
+      ]
+    }
+  },
+  "Outputs": {
+    "ServerlessDeploymentBucketName": {
+      "Value": {
+        "Ref": "ServerlessDeploymentBucket"
+      }
+    },
+    "ServiceEndpoint": {
+      "Description": "URL of the service endpoint",
+      "Value": {
+        "Fn::Join": [
+          "",
+          [
+            "https://",
+            {
+              "Ref": "ApiGatewayRestApi"
+            },
+            ".execute-api.",
+            {
+              "Ref": "AWS::Region"
+            },
+            ".",
+            {
+              "Ref": "AWS::URLSuffix"
+            },
+            "/production"
+          ]
+        ]
+      }
+    }
+  }
+}

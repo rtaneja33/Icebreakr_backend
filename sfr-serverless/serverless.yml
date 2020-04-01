@@ -1,0 +1,47 @@
+service: iceBreaker
+
+provider:
+  name: aws
+  runtime: nodejs12.x
+  environment: ${file(../config/develop.yml):environment}
+  stage: develop
+  region: us-east-1
+  versionFunctions: false
+  vpc: ${file(../config/develop.yml):vpc}
+
+plugins:
+  - serverless-plugin-typescript
+  - serverless-offline
+  - serverless-plugin-split-stacks
+
+custom: 
+  authorizer: 
+    name: authorizer
+    resultTtlInSeconds: 0
+    identitySource: method.request.header.Authorization
+    type: token
+  cors: 
+    origin: '*'
+    headers:
+      - Content-Type
+      - X-Amz-Date
+      - Authorization
+      - X-Api-Key
+      - X-Amz-Security-Token
+      - X-Amz-User-Agent
+      - Accept-Encoding
+      - Content-Encoding
+  splitStacks:
+    nestedStackCount: 20 # Controls the number of created nested stacks
+    perFunction: true
+    perType: false
+    perGroupFunction: false
+    stackConcurrency: 5 # Controls if enabled and how much stacks are deployed in parallel. Disabled if absent.
+    resourceConcurrency: 10
+ 
+functions:
+  authorizer:
+    handler: authorizer/handler.authorize
+  users: ${file(./routers/users.yml)}
+  globals: ${file(./routers/globals.yml)}
+ 
